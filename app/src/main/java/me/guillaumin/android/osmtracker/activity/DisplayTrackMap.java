@@ -83,9 +83,9 @@ public class DisplayTrackMap extends Activity {
 	private boolean zoomedToTrackAlready = false;
 	// the last position we know
 	private GeoPoint currentPosition;
-	/*The row id of the last location read from the database that has been added to the
-	  list of layout points. Using this we to reduce DB load by only reading new points.
-	  Initially null, to indicate that no data has yet been read.*/
+	/* The row id of the last location read from the database that has been added to the
+	   list of layout points. Using this we to reduce DB load by only reading new points.
+	   Initially null, to indicate that no data has yet been read. */
 	private Integer lastTrackPointIdProcessed = null;
 	// Observes changes on trackpoints
 	private ContentObserver trackpointContentObserver;
@@ -193,7 +193,7 @@ public class DisplayTrackMap extends Activity {
 		
 		// setKeepScreenOn depending on user's preferences
 		osmView.setKeepScreenOn(prefs.getBoolean(OSMTracker.Preferences.KEY_UI_DISPLAY_KEEP_ON, OSMTracker.Preferences.VAL_UI_DISPLAY_KEEP_ON));
-		
+
 		// Register content observer for any trackpoint changes
 		getContentResolver().registerContentObserver(
 				TrackContentProvider.trackPointsUri(currentTrackId),
