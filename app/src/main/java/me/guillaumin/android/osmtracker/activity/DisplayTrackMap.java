@@ -1,24 +1,5 @@
 package me.guillaumin.android.osmtracker.activity;
 
-import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.List;
-
-import me.guillaumin.android.osmtracker.OSMTracker;
-import me.guillaumin.android.osmtracker.R;
-import me.guillaumin.android.osmtracker.db.TrackContentProvider;
-import me.guillaumin.android.osmtracker.db.TrackContentProvider.Schema;
-import me.guillaumin.android.osmtracker.overlay.WayPointsOverlay;
-
-import org.osmdroid.api.IMapController;
-import org.osmdroid.contributor.util.constants.OpenStreetMapContributorConstants;
-import org.osmdroid.tileprovider.tilesource.ITileSource;
-import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
-import org.osmdroid.util.GeoPoint;
-import org.osmdroid.views.MapView;
-import org.osmdroid.views.overlay.PathOverlay;
-import org.osmdroid.views.overlay.SimpleLocationOverlay;
-
 import android.app.Activity;
 import android.content.ContentUris;
 import android.content.Intent;
@@ -37,9 +18,27 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
 
+import org.osmdroid.api.IMapController;
+import org.osmdroid.tileprovider.tilesource.ITileSource;
+import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
+import org.osmdroid.util.GeoPoint;
+import org.osmdroid.views.MapView;
+import org.osmdroid.views.overlay.PathOverlay;
+import org.osmdroid.views.overlay.SimpleLocationOverlay;
+
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.List;
+
+import me.guillaumin.android.osmtracker.OSMTracker;
+import me.guillaumin.android.osmtracker.R;
+import me.guillaumin.android.osmtracker.db.TrackContentProvider;
+import me.guillaumin.android.osmtracker.db.TrackContentProvider.Schema;
+import me.guillaumin.android.osmtracker.overlay.WayPointsOverlay;
+
 /**
  * Display current track over an OSM map.
- * Based on osmdroid code http://osmdroid.googlecode.com/
+ * Based on osmdroid code https://github.com/osmdroid/osmdroid
  *<P>
  * Used only if {@link OSMTracker.Preferences#KEY_UI_DISPLAYTRACK_OSM} is set.
  * Otherwise {@link DisplayTrack} is used (track only, no OSM background tiles).
@@ -47,110 +46,50 @@ import android.view.View.OnClickListener;
  * @author Viesturs Zarins
  *
  */
-public class DisplayTrackMap extends Activity implements OpenStreetMapContributorConstants{
+public class DisplayTrackMap extends Activity {
 
 	private static final String TAG = DisplayTrackMap.class.getSimpleName();
-	
-	/**
-	 * Key for keeping the zoom level in the saved instance bundle
-	 */
+	// Key for keeping the zoom level in the saved instance bundle
 	private static final String CURRENT_ZOOM = "currentZoom";
-
-	/**
-	 *  Key for keeping scrolled left position of OSM view activity re-creation
-	 * 
-	 */
+	// Key for keeping scrolled left position of OSM view activity re-creation
 	private static final String CURRENT_SCROLL_X = "currentScrollX";
-
-	/** 
-	 * Key for keeping scrolled top position of OSM view across activity re-creation
-	 * 
-	 */ 
+	// Key for keeping scrolled top position of OSM view across activity re-creation
 	private static final String CURRENT_SCROLL_Y = "currentScrollY";
-
-	/**
-	 *  Key for keeping whether the map display should be centered to the gps location 
-	 * 
-	 */
+	// Key for keeping whether the map display should be centered to the gps location
 	private static final String CURRENT_CENTER_TO_GPS_POS = "currentCenterToGpsPos";
-
-	/**
-	 *  Key for keeping whether the map display was zoomed and centered
-	 *  on an old track id loaded from the database (boolean {@link #zoomedToTrackAlready})
-	 */
+	// Key for keeping whether the map display was zoomed and centered
+	// on an old track id loaded from the database (boolean {@link #zoomedToTrackAlready})
 	private static final String CURRENT_ZOOMED_TO_TRACK = "currentZoomedToTrack";
-
-	/**
-	 * Key for keeping the last zoom level across app. restart
-	 */
+	// Key for keeping the last zoom level across app. restart
 	private static final String LAST_ZOOM = "lastZoomLevel";
-
-	/**
-	 * Default zoom level
-	 */
+	// Default zoom level
 	private static final int DEFAULT_ZOOM  = 16;
-
-	/**
-	 * Main OSM view
-	 */
+	// Main OSM view
 	private MapView osmView;
-	
-	/**
-	 * Controller to interact with view
-	 */
+	// Controller to interact with view
 	private IMapController osmViewController;
-	
-	/**
-	 * OSM view overlay that displays current location
-	 */
+	// OSM view overlay that displays current location
 	private SimpleLocationOverlay myLocationOverlay;
-	
-	/**
-	 * OSM view overlay that displays current path
-	 */
+	// OSM view overlay that displays current path
 	private PathOverlay pathOverlay;
-
-	/**
-	 * OSM view overlay that displays waypoints 
-	 */
-	private WayPointsOverlay wayPointsOverlay;	
-	
-	/**
-	 * Current track id
-	 */
+	// OSM view overlay that displays waypoints
+	private WayPointsOverlay wayPointsOverlay;
+	// Current track id
 	private long currentTrackId;
-	
-	/**
-	 * whether the map display should be centered to the gps location 
-	 */
+	// whether the map display should be centered to the gps location
 	private boolean centerToGpsPos = true;
-	
-	/**
-	 * whether the map display was already zoomed and centered
-	 * on an old track loaded from the database (should be done only once).
-	 */
+	// whether the map display was already zoomed and centered
+    // on an old track loaded from the database (should be done only once).
 	private boolean zoomedToTrackAlready = false;
-	
-	/**
-	 * the last position we know
-	 */
+	// the last position we know
 	private GeoPoint currentPosition;
-
-	/**
-	 * The row id of the last location read from the database that has been added to the
-	 * list of layout points. Using this we to reduce DB load by only reading new points.
-	 * Initially null, to indicate that no data has yet been read.  
-	 */
+	/*The row id of the last location read from the database that has been added to the
+	  list of layout points. Using this we to reduce DB load by only reading new points.
+	  Initially null, to indicate that no data has yet been read.*/
 	private Integer lastTrackPointIdProcessed = null;
-	
-	/**
-	 * Observes changes on trackpoints
-	 */
+	// Observes changes on trackpoints
 	private ContentObserver trackpointContentObserver;
-
-	/**
-	 * Keeps the SharedPreferences
-	 */
+	// Keeps the SharedPreferences
 	private SharedPreferences prefs = null;
 
 	@Override
